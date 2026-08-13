@@ -1,6 +1,12 @@
-# No Nines Given
+<p align="center">
+  <img src="assets/logo.svg" alt="No Nines Given" width="620">
+</p>
 
-**Downtime as a Service.** Guaranteed 0.000% uptime, or your money back.
+<p align="center">
+  <strong>Downtime as a Service.</strong> Guaranteed 0.000% uptime, or your money back.
+</p>
+
+---
 
 This repository contains the public marketing site for No Nines Given
 (noninesgiven.com), the industry's first and only provider of contractually

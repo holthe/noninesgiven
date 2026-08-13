@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>No Nines Given - Downtime as a Service</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   @font-face { font-family: "Archivo"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/archivo-500.woff2") format("woff2"); }
   @font-face { font-family: "Archivo"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/archivo-700.woff2") format("woff2"); }
@@ -58,11 +59,13 @@
   }
   .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 58px; }
   .logo {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: baseline; gap: 10px;
     font-family: var(--display); font-weight: 900; font-size: 16px;
     letter-spacing: -0.02em; text-decoration: none; text-transform: uppercase;
   }
-  .logo .sq { width: 12px; height: 12px; background: var(--down); animation: blink 1.6s steps(1) infinite; }
+  /* 0.6875em matches Archivo's cap height; baseline alignment sits the square
+     flush on the type baseline so it tracks the cap band at any size. */
+  .logo .sq { width: 0.6875em; height: 0.6875em; background: var(--down); animation: blink 1.6s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0.3; } }
   .nav-links { display: flex; gap: 24px; align-items: center; }
   .nav-links a:not(.btn) {
