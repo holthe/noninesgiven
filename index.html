@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>No Nines Given - Downtime as a Service</title>
+<style>
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/archivo-500.woff2") format("woff2"); }
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/archivo-700.woff2") format("woff2"); }
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 900; font-display: swap; src: url("/fonts/archivo-900.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-sans-500.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-sans-600.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-mono-500.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-mono-600.woff2") format("woff2"); }
+</style>
+<style>
+  :root {
+    --ink: #16181d;
+    --ink-soft: #55585f;
+    --paper: #f1f2f3;
+    --cell: #fafafa;
+    --down: #d5232b;
+    --down-tint: #fbeaea;
+    --amber: #b78f00;
+    --amber-tint: #f7f0d6;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --display: "Archivo", system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
+  ::selection { background: var(--down); color: #fff; }
+
+  /* ---------- ribbon ---------- */
+  .ribbon {
+    background: var(--ink); color: #fff;
+    font-family: var(--mono); font-size: 12px;
+    text-align: center; padding: 8px 16px; letter-spacing: 0.04em;
+  }
+  .ribbon b { color: #ff5a60; font-weight: 600; }
+
+  /* ---------- nav ---------- */
+  nav {
+    background: var(--paper);
+    border-bottom: 2px solid var(--ink);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-weight: 900; font-size: 16px;
+    letter-spacing: -0.02em; text-decoration: none; text-transform: uppercase;
+  }
+  .logo .sq { width: 12px; height: 12px; background: var(--down); animation: blink 1.6s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a:not(.btn) {
+    text-decoration: none; color: var(--ink-soft);
+    font-family: var(--mono); font-size: 13px;
+  }
+  .nav-links a:not(.btn):hover { color: var(--down); }
+  .btn {
+    display: inline-block; cursor: pointer; text-decoration: none;
+    font-family: var(--mono); font-weight: 600; font-size: 13.5px;
+    padding: 11px 20px; border: 1px solid var(--ink);
+    background: var(--cell); color: var(--ink);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .btn:hover { background: var(--ink); color: #fff; }
+  .btn-primary { background: var(--down); border-color: var(--down); color: #fff; }
+  .btn-primary:hover { background: var(--ink); border-color: var(--ink); }
+  @media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 72px 0 0; }
+  .sysline {
+    font-family: var(--mono); font-size: 13px; color: var(--ink-soft);
+    margin-bottom: 28px;
+  }
+  .sysline b { color: var(--down); font-weight: 600; }
+  h1 {
+    font-family: var(--display); font-weight: 900; text-transform: uppercase;
+    letter-spacing: -0.025em; font-size: clamp(46px, 9vw, 108px);
+    line-height: 0.94; margin-bottom: 26px;
+  }
+  h1 .strike { color: var(--down); position: relative; white-space: nowrap; display: inline-block; }
+  h1 .strike::after {
+    content: ""; position: absolute; left: -2%; right: -2%; top: 52%;
+    height: 0.07em; background: var(--ink);
+    transform: rotate(-1.5deg) scaleX(1); transform-origin: left center;
+    animation: strike 0.45s cubic-bezier(0.6, 0, 0.3, 1) 0.6s backwards;
+  }
+  @keyframes strike { from { transform: rotate(-1.5deg) scaleX(0); } }
+  .hero p.lede { max-width: 600px; font-size: 17px; color: var(--ink-soft); margin-bottom: 30px; }
+  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 56px; }
+
+  /* ---------- meter panel ---------- */
+  .panel { border: 1px solid var(--ink); background: var(--cell); }
+  .panel-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border-bottom: 1px solid var(--ink); padding: 9px 14px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .panel-bar .sq { width: 10px; height: 10px; background: var(--down); animation: blink 1.6s steps(1) infinite; }
+  .panel-body { padding: 26px 22px; }
+  .counter {
+    font-family: var(--mono); font-weight: 600; text-align: center;
+    font-size: clamp(26px, 5.6vw, 50px); font-variant-numeric: tabular-nums;
+  }
+  .counter .unit { font-size: 0.42em; color: var(--ink-soft); font-weight: 400; margin: 0 12px 0 4px; }
+  .upbars { display: flex; gap: 2px; height: 36px; margin-top: 26px; }
+  .upbar { flex: 1; background: var(--down); min-width: 0; }
+  .upbar:hover { background: var(--ink); }
+  .upbar.was-up { background: var(--amber); }
+  .upbars-legend {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
+  }
+  .counter-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ink);
+  }
+  .cstat { padding: 14px 10px; text-align: center; border-right: 1px solid var(--ink); }
+  .cstat:last-child { border-right: none; }
+  .cstat b { font-family: var(--mono); font-size: 18px; display: block; font-weight: 600; }
+  .cstat b.red { color: var(--down); }
+  .cstat span { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+
+  /* ---------- sections ---------- */
+  section { padding: 76px 0 0; }
+  section:last-of-type { padding-bottom: 76px; }
+  .section-head { margin-bottom: 28px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--down); font-weight: 600;
+  }
+  .eyebrow::before { content: "// "; }
+  h2 {
+    font-family: var(--display); font-weight: 900; text-transform: uppercase;
+    letter-spacing: -0.02em; font-size: clamp(26px, 4vw, 38px);
+    line-height: 1.04; margin: 8px 0 10px;
+  }
+  .section-head p { color: var(--ink-soft); font-size: 16px; max-width: 620px; }
+
+  /* ---------- status table ---------- */
+  .status-board { border: 1px solid var(--ink); background: var(--cell); }
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--ink); gap: 12px;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-row:hover { background: #f3f3f1; }
+  .status-name { font-weight: 600; font-size: 14.5px; display: flex; align-items: center; gap: 12px; }
+  .status-name .sq { width: 10px; height: 10px; flex-shrink: 0; }
+  .sq.red { background: var(--down); }
+  .sq.amb { background: var(--amber); }
+  .status-name small { font-family: var(--mono); font-weight: 400; color: var(--ink-soft); font-size: 12.5px; }
+  .stat-tag { font-family: var(--mono); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .stat-tag.red { color: var(--down); }
+  .stat-tag.amb { color: var(--amber); }
+  @media (max-width: 560px) { .status-name small { display: none; } }
+
+  /* ---------- features grid (shared borders) ---------- */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--ink); background: var(--ink); gap: 1px;
+  }
+  @media (max-width: 860px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
+  .feature { background: var(--cell); padding: 22px 20px; }
+  .feature:hover { background: var(--down-tint); }
+  .feature .fmetric {
+    font-family: var(--mono); font-weight: 600; font-size: 26px; color: var(--down);
+    display: block; margin-bottom: 10px;
+  }
+  .feature h3 {
+    font-family: var(--display); font-weight: 700; font-size: 15px;
+    text-transform: uppercase; letter-spacing: 0.01em; margin-bottom: 8px;
+  }
+  .feature p { font-size: 14px; color: var(--ink-soft); }
+
+  /* ---------- incidents ---------- */
+  .incident-log { border: 1px solid var(--ink); background: var(--cell); }
+  .incident { padding: 18px 20px; border-bottom: 1px solid var(--ink); }
+  .incident:last-child { border-bottom: none; }
+  .incident .imeta {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-soft);
+    margin-bottom: 6px; display: flex; gap: 14px; flex-wrap: wrap;
+  }
+  .incident .imeta b { font-weight: 600; }
+  .imeta b.sev0 { color: var(--down); }
+  .imeta b.res { color: var(--amber); }
+  .incident h4 { font-size: 15.5px; font-weight: 600; margin-bottom: 5px; }
+  .incident p { font-size: 14.5px; color: var(--ink-soft); max-width: 760px; }
+
+  /* ---------- testimonials ---------- */
+  .quotes-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--ink); background: var(--ink); gap: 1px;
+  }
+  @media (max-width: 860px) { .quotes-grid { grid-template-columns: 1fr; } }
+  .quote { background: var(--cell); padding: 22px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .quote .qmark { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .quote p { font-size: 14.5px; }
+  .quote .who { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-top: auto; }
+  .quote .who b { color: var(--ink); font-weight: 600; display: block; }
+
+  /* ---------- pricing ---------- */
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--ink); background: var(--ink); gap: 1px;
+  }
+  @media (max-width: 860px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .plan { background: var(--cell); padding: 0; display: flex; flex-direction: column; }
+  .plan-head { border-bottom: 1px solid var(--ink); padding: 16px 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .plan-head h3 { font-family: var(--display); font-weight: 900; font-size: 17px; text-transform: uppercase; }
+  .plan-head .flag { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--down); }
+  .plan.featured .plan-head { background: var(--ink); color: #fff; }
+  .plan.featured .plan-head .flag { color: #ff5a60; }
+  .plan-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+  .plan .price { font-family: var(--mono); font-weight: 600; font-size: 32px; }
+  .plan .price small { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
+  .plan .tag { font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 16px; }
+  .plan ul { list-style: none; margin-bottom: 22px; }
+  .plan li {
+    font-size: 13.5px; padding: 7px 0 7px 24px; position: relative;
+    border-bottom: 1px dotted #c9cbce;
+  }
+  .plan li:last-child { border-bottom: none; }
+  .plan li::before { content: "✕"; position: absolute; left: 2px; color: var(--down); font-weight: 700; font-family: var(--mono); }
+  .plan .btn { margin-top: auto; text-align: center; }
+
+  /* ---------- newsletter ---------- */
+  .news { background: var(--ink); color: #fff; padding: 46px 30px; text-align: center; border: 1px solid var(--ink); }
+  .news h2 { color: #fff; }
+  .news p { color: #9aa0aa; max-width: 480px; margin: 0 auto 26px; }
+  .news form { display: flex; gap: 0; justify-content: center; flex-wrap: wrap; }
+  .news input {
+    font-family: var(--mono); font-size: 14px; padding: 12px 14px;
+    border: 1px solid #fff; background: var(--ink); color: #fff; min-width: 260px;
+  }
+  .news input::placeholder { color: #7c828c; }
+  .news .btn { border-color: #fff; }
+
+  /* ---------- footer ---------- */
+  footer { border-top: 2px solid var(--ink); padding: 28px 0 48px; color: var(--ink-soft); font-family: var(--mono); font-size: 12.5px; }
+  .foot-inner { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center; }
+  .foot-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .foot-links a { text-decoration: none; }
+  .foot-links a:hover { color: var(--down); }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(150%);
+    background: var(--ink); color: #fff; border: 1px solid #fff;
+    font-family: var(--mono); font-size: 13px;
+    padding: 12px 18px; z-index: 100;
+    transition: transform 0.25s ease;
+    max-width: calc(100vw - 40px); text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast::before { content: "! "; color: #ff5a60; font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--down); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ribbon"><b>[MAJOR OUTAGE]</b> All systems nonoperational. This is not an incident. This is the product.</div>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="logo" href="#"><span class="sq"></span>No Nines Given</a>
+    <div class="nav-links">
+      <a href="#status">status</a>
+      <a href="#features">features</a>
+      <a href="#incidents">incidents</a>
+      <a href="#pricing">pricing</a>
+      <a href="#" class="btn btn-primary" onclick="failGracefully(event)">Get down</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <div class="sysline">$ curl https://api.noninesgiven.com &nbsp;→&nbsp; <b>connection refused</b> (0.2ms, our fastest response yet)</div>
+  <h1>No <span class="strike">Nines</span><br>Given</h1>
+  <p class="lede">Downtime as a Service. Other providers promise five nines. We give none, every time. The only platform with a contractually guaranteed 0.000% uptime SLA. When you need nothing, we're not there.</p>
+  <div class="hero-ctas">
+    <a href="#pricing" class="btn btn-primary" onclick="failGracefully(event)">Start being down</a>
+    <a href="#" class="btn" onclick="salesToast(event)">Talk to no one in sales</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-bar"><span>Downtime meter — live</span><span class="sq"></span></div>
+    <div class="panel-body">
+      <div class="counter" id="counter" aria-live="off">
+        <span id="d">0</span><span class="unit">d</span><span id="h">00</span><span class="unit">h</span><span id="m">00</span><span class="unit">m</span><span id="s">00</span><span class="unit">s</span>
+      </div>
+      <div class="upbars" id="upbars" aria-label="90 day uptime history: entirely down"></div>
+      <div class="upbars-legend"><span>90 days ago</span><span>0.000% uptime, one regrettable exception</span><span>today</span></div>
+    </div>
+    <div class="counter-stats">
+      <div class="cstat"><b class="red">0.000%</b><span>UPTIME (GUARANTEED)</span></div>
+      <div class="cstat"><b class="red">0</b><span>NINES GIVEN (AUDITED)</span></div>
+      <div class="cstat"><b class="red">100%</b><span>SLA COMPLIANCE</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="status">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Live status</span>
+      <h2>Everything is down. As designed.</h2>
+      <p>Real-time monitoring of our full stack. If anything below ever turns green, please report it so we can take it back down.</p>
+    </div>
+    <div class="status-board">
+      <div class="status-row"><span class="status-name"><span class="sq red"></span>Core API <small>api.noninesgiven.com</small></span><span class="stat-tag red">[DOWN]</span></div>
+      <div class="status-row"><span class="status-name"><span class="sq red"></span>Dashboard <small>app.noninesgiven.com</small></span><span class="stat-tag red">[DOWN]</span></div>
+      <div class="status-row"><span class="status-name"><span class="sq red"></span>Webhooks <small>never delivered, as promised</small></span><span class="stat-tag red">[DOWN]</span></div>
+      <div class="status-row"><span class="status-name"><span class="sq red"></span>Documentation <small>404 by design</small></span><span class="stat-tag red">[DOWN]</span></div>
+      <div class="status-row"><span class="status-name"><span class="sq amb"></span>This website <small>we are investigating</small></span><span class="stat-tag amb">[DEGRADED: ACCIDENTALLY UP]</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Built to not scale</h2>
+      <p>Every feature engineered to the highest standard of total absence. Rigorously untested in production, because there is no production.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature"><span class="fmetric">0.000%</span><h3>Guaranteed uptime SLA</h3><p>Legally binding. If we are ever up, you get a full refund and a written apology from our founder.</p></div>
+      <div class="feature"><span class="fmetric">24/7</span><h3>Scheduled maintenance</h3><p>Our maintenance window runs continuously since 2021. We schedule it years in advance so nothing surprises you.</p></div>
+      <div class="feature"><span class="fmetric">&infin;</span><h3>On-call that never answers</h3><p>Our engineers carry pagers with no batteries. Mean time to acknowledgment holds steady at infinity, quarter after quarter.</p></div>
+      <div class="feature"><span class="fmetric">404</span><h3>Not Found by design</h3><p>Every endpoint returns Not Found. Nothing has ever completed a request, keeping our error rate at a flawless, industry-leading 100%.</p></div>
+      <div class="feature"><span class="fmetric">0 GB</span><h3>Zero data retention</h3><p>The most private platform on earth. We cannot leak what we never stored, on servers we never bought.</p></div>
+      <div class="feature"><span class="fmetric">0 W</span><h3>Runs on nothing</h3><p>Our infrastructure draws zero watts, because there is no infrastructure. The greenest cloud is the one that was never built.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="incidents">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Incident history</span>
+      <h2>Post-mortems for a service with no pulse</h2>
+      <p>Full transparency. Every deviation from total downtime is investigated, documented, and deeply regretted.</p>
+    </div>
+    <div class="incident-log">
+      <div class="incident">
+        <div class="imeta"><b class="res">[RESOLVED]</b><span>2026-07-19</span><span>duration: 4 min</span></div>
+        <h4>Service briefly responded to a request</h4>
+        <p>A misconfigured load balancer returned "200 OK" to one (1) request. We sincerely apologize. The responsible server has been unplugged, shipped to a warehouse, and lost.</p>
+      </div>
+      <div class="incident">
+        <div class="imeta"><b class="res">[RESOLVED]</b><span>2025-11-02</span><span>duration: 9 min</span></div>
+        <h4>Status page showed a green dot</h4>
+        <p>A frontend deploy accidentally shipped optimism. Rolled back immediately. We have added a linter rule banning the color green from the codebase.</p>
+      </div>
+      <div class="incident">
+        <div class="imeta"><b class="res">[RESOLVED]</b><span>2025-03-14</span><span>duration: 2 days</span></div>
+        <h4>Customer reported the API "kind of working"</h4>
+        <p>Investigation revealed the customer had connected to a competitor by mistake. No action needed on our side, which is our specialty.</p>
+      </div>
+      <div class="incident">
+        <div class="imeta"><b class="sev0">[SEV-0 · ONGOING]</b><span>2021-03-04 → present</span></div>
+        <h4>Everything is down</h4>
+        <p>Root cause identified: this is the product. No fix is planned. Next update: never.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Customers</span>
+      <h2>Trusted to deliver nothing</h2>
+    </div>
+    <div class="quotes-grid">
+      <div class="quote">
+        <span class="qmark">LOG 001</span>
+        <p>"Since switching to No Nines Given we've had zero unexpected downtime. It's all expected now. My pager hasn't gone off in fourteen months."</p>
+        <div class="who"><b>Henrik L.</b>VP of Infrastructure, unnamed for his own safety</div>
+      </div>
+      <div class="quote">
+        <span class="qmark">LOG 002</span>
+        <p>"We migrated our entire legacy platform to No Nines Given in one afternoon. Nobody noticed. Honestly, nobody noticed the legacy platform either."</p>
+        <div class="who"><b>Priya S.</b>CTO, a startup that pivoted before launch</div>
+      </div>
+      <div class="quote">
+        <span class="qmark">LOG 003</span>
+        <p>"Their support team has never once responded to my tickets. That level of consistency is impossible to find anywhere else."</p>
+        <div class="who"><b>Marcus D.</b>Head of Procurement, still on hold</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Pricing</span>
+      <h2>Pay for what you don't use</h2>
+      <p>Simple, predictable billing. Invoices are the only thing we deliver on time.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-head"><h3>Down</h3></div>
+        <div class="plan-body">
+          <div class="price">$0<small>/mo</small></div>
+          <div class="tag">For hobbyists who need nothing occasionally.</div>
+          <ul>
+            <li>1 region of unavailability</li>
+            <li>Community support (also down)</li>
+            <li>Best-effort 404s</li>
+            <li>Downtime badge for your website</li>
+          </ul>
+          <a href="#" class="btn" onclick="failGracefully(event)">Get started</a>
+        </div>
+      </div>
+      <div class="plan featured">
+        <div class="plan-head"><h3>Downer</h3><span class="flag">[MOST AVOIDED]</span></div>
+        <div class="plan-body">
+          <div class="price">$49<small>/mo</small></div>
+          <div class="tag">For teams that need nothing, reliably.</div>
+          <ul>
+            <li>Global multi-region outage</li>
+            <li>Guaranteed 0.000% uptime SLA</li>
+            <li>Unanswered priority support</li>
+            <li>Monthly report confirming nothing happened</li>
+            <li>Webhooks (never delivered)</li>
+          </ul>
+          <a href="#" class="btn btn-primary" onclick="failGracefully(event)">Choose Downer</a>
+        </div>
+      </div>
+      <div class="plan">
+        <div class="plan-head"><h3>The Full Outage</h3></div>
+        <div class="plan-body">
+          <div class="price">Custom</div>
+          <div class="tag">For enterprises with serious nothing requirements.</div>
+          <ul>
+            <li>Dedicated absence of infrastructure</li>
+            <li>Named account manager (on leave)</li>
+            <li>Quarterly business reviews (cancelled)</li>
+            <li>SOC 2 non-compliance report</li>
+            <li>Custom legal review of your refund requests</li>
+          </ul>
+          <a href="#" class="btn" onclick="salesToast(event)">Contact sales</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="news">
+      <h2>Stay out of the loop</h2>
+      <p>Subscribe to our newsletter. You will not receive it. That's the No Nines Given promise.</p>
+      <form onsubmit="subscribe(event)">
+        <input type="email" placeholder="you@company.com" aria-label="Email address" required>
+        <button class="btn btn-primary" type="submit">Unsubscribe me in advance</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div>© 2026 No Nines Given. All rights unresponsive.</div>
+    <div class="foot-links">
+      <a href="#" onclick="toast(event, 'Privacy policy could not be loaded. Working as intended.')">privacy</a>
+      <a href="#" onclick="toast(event, 'Terms of Service: there is no service. Terms accepted.')">terms</a>
+      <a href="#" onclick="toast(event, 'Careers: we are not hiring. We are not anything.')">careers</a>
+      <a href="#" onclick="toast(event, 'Error 503: contact page unavailable. Finally, something works.')">contact</a>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  // Live downtime counter since founding
+  var since = new Date("2021-03-04T09:41:00Z").getTime();
+  function pad(n) { return String(n).length < 2 ? "0" + n : String(n); }
+  function tick() {
+    var diff = Math.floor((Date.now() - since) / 1000);
+    var d = Math.floor(diff / 86400); diff -= d * 86400;
+    var h = Math.floor(diff / 3600); diff -= h * 3600;
+    var m = Math.floor(diff / 60);
+    var s = diff - m * 60;
+    document.getElementById("d").textContent = d.toLocaleString("en-US");
+    document.getElementById("h").textContent = pad(h);
+    document.getElementById("m").textContent = pad(m);
+    document.getElementById("s").textContent = pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // 90-day uptime history: all down, except the day we were accidentally up
+  var bars = document.getElementById("upbars");
+  var incidentDay = new Date("2026-07-19T00:00:00"); incidentDay.setHours(0, 0, 0, 0);
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  for (var i = 89; i >= 0; i--) {
+    var day = new Date(today); day.setDate(day.getDate() - i);
+    var bar = document.createElement("div");
+    var sameDay = day.getTime() === incidentDay.getTime();
+    bar.className = "upbar" + (sameDay ? " was-up" : "");
+    bar.title = day.toISOString().slice(0, 10) + (sameDay
+      ? " - Partial availability detected for 4 minutes. Disciplinary action taken."
+      : " - Fully down. Excellent.");
+    bars.appendChild(bar);
+  }
+
+  // Toasts
+  var toastTimer;
+  function showToast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+  }
+  function toast(e, msg) { e.preventDefault(); showToast(msg); }
+
+  var failures = [
+    "Error 200: request unexpectedly OK. Incident opened.",
+    "Signup failed successfully. Welcome to No Nines Given.",
+    "Request timed out immediately. Ahead of schedule.",
+    "Connection refused, politely.",
+    "Your click was received and will be ignored in order."
+  ];
+  var fi = 0;
+  function failGracefully(e) {
+    e.preventDefault();
+    showToast(failures[fi++ % failures.length]);
+  }
+  function salesToast(e) {
+    e.preventDefault();
+    showToast("You are caller number 8,412. Estimated wait: yes.");
+  }
+  function subscribe(e) {
+    e.preventDefault();
+    e.target.querySelector("input").value = "";
+    showToast("Subscription failed, as promised. Check your inbox for nothing.");
+  }
+</script>
+
+</body>
+</html>
