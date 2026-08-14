@@ -1,0 +1,9 @@
+# Crawl freely. There is nothing here that will change.
+# Uptime has been 0.000% since inception, so this file is
+# unlikely to require revisiting.
+
+User-agent: *
+Allow: /
+
+# Our API is available at api.noninesgiven.com, which refuses
+# connections. This is not a misconfiguration. It is the product.

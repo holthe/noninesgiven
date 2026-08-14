@@ -1,0 +1,21 @@
+# Cloudflare Pages header rules. Not served as a file.
+
+# Applies everywhere, including the apex, which /*.html would miss.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Fonts are content stable and filename stable. Cache hard.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Brand assets change rarely, but not never.
+/favicon.svg
+  Cache-Control: public, max-age=604800
+/og.png
+  Cache-Control: public, max-age=604800
+/assets/*
+  Cache-Control: public, max-age=604800
+
+# HTML keeps the Pages default of max-age=0, must-revalidate,
+# so edits go live immediately. No rule needed.
