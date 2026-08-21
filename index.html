@@ -45,7 +45,7 @@
     --cell: #fafafa;
     --down: #d5232b;
     --down-tint: #fbeaea;
-    --amber: #b78f00;
+    --amber: #8a6c00;
     --amber-tint: #f7f0d6;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
     --sans: "IBM Plex Sans", system-ui, sans-serif;
@@ -331,13 +331,13 @@
   </div>
 
   <div class="panel">
-    <div class="panel-bar"><span>Downtime meter — live</span><span class="sq"></span></div>
+    <div class="panel-bar"><span>Downtime meter · live</span><span class="sq"></span></div>
     <div class="panel-body">
       <div class="counter" id="counter" aria-live="off">
         <span id="d">0</span><span class="unit">d</span><span id="h">00</span><span class="unit">h</span><span id="m">00</span><span class="unit">m</span><span id="s">00</span><span class="unit">s</span>
       </div>
       <div class="upbars" id="upbars" aria-label="90 day uptime history: entirely down"></div>
-      <div class="upbars-legend"><span>90 days ago</span><span>0.000% uptime, one regrettable exception</span><span>today</span></div>
+      <div class="upbars-legend"><span>90 days ago</span><span id="upbarsNote">0.000% uptime, one regrettable exception</span><span>today</span></div>
     </div>
     <div class="counter-stats">
       <div class="cstat"><b class="red">0.000%</b><span>UPTIME (GUARANTEED)</span></div>
@@ -545,16 +545,31 @@
   var bars = document.getElementById("upbars");
   var incidentDay = new Date("2026-07-19T00:00:00"); incidentDay.setHours(0, 0, 0, 0);
   var today = new Date(); today.setHours(0, 0, 0, 0);
+  // the bars are local days, so the label has to be built from local parts:
+  // toISOString() would shift the date for anyone east of UTC and file the
+  // incident under the previous day
+  function stamp(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+         + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  var incidentInWindow = false;
   for (var i = 89; i >= 0; i--) {
     var day = new Date(today); day.setDate(day.getDate() - i);
     var bar = document.createElement("div");
     var sameDay = day.getTime() === incidentDay.getTime();
+    if (sameDay) incidentInWindow = true;
     bar.className = "upbar" + (sameDay ? " was-up" : "");
-    bar.title = day.toISOString().slice(0, 10) + (sameDay
+    bar.title = stamp(day) + (sameDay
       ? " - Partial availability detected for 4 minutes. Disciplinary action taken."
       : " - Fully down. Excellent.");
     bars.appendChild(bar);
   }
+
+  // once the incident scrolls out of the window the record is spotless again
+  var legend = document.getElementById('upbarsNote');
+  if (legend) legend.textContent = incidentInWindow
+    ? '0.000% uptime, one regrettable exception'
+    : '0.000% uptime, no exceptions';
 
   // Toasts
   var toastTimer;
